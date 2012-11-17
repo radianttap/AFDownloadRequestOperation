@@ -181,6 +181,25 @@ typedef void (^AFURLConnectionProgressiveOperationProgressBlock)(NSInteger bytes
     self.progressiveDownloadProgress = block;
 }
 
+- (void)pause {
+	[super pause];
+	
+	if (!self.shouldResume) return;
+
+	// fix the Range- header
+	NSString *tempPath = [self tempPath];
+	BOOL isResuming = NO;
+	unsigned long long downloadedBytes = [self fileSizeForPath:tempPath];
+	if (downloadedBytes > 0) {
+		NSMutableURLRequest *mutableURLRequest = [self.request mutableCopy];
+		NSString *requestRange = [NSString stringWithFormat:@"bytes=%llu-", downloadedBytes];
+		[mutableURLRequest setValue:requestRange forHTTPHeaderField:@"Range"];
+		self.request = mutableURLRequest;
+		isResuming = YES;
+	}
+	
+}
+
 #pragma mark - AFURLRequestOperation
 
 - (void)setCompletionBlockWithSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
